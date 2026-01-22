@@ -3,18 +3,21 @@ import secrets
 from functools import wraps
 from importlib.metadata import entry_points
 from os import environ
+from typing import Any
 from wsgiref.simple_server import make_server
 
-logging.basicConfig(level=logging.INFO)
-
 from click import INT, group, option, pass_context
-from click_plugins import with_plugins
-from flask import Flask
+from click_plugins import with_plugins  # type: ignore[import-untyped]
+from flask import Flask  # type: ignore[import-untyped]
 from prometheus_client import make_wsgi_app
 from prometheus_client.core import REGISTRY
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.dispatcher import (  # type: ignore[import-untyped]
+    DispatcherMiddleware,
+)
 
 from cli.collect import Collector
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
@@ -93,7 +96,7 @@ def home(env, start_response):
 @main.command("start-server")
 @pass_context
 @option("--port", default=None, type=INT)
-def server(context, port):
+def server(context: Any, port: int | None) -> None:
     """
     Starting wsgi server for prometheus exporter.
     """
@@ -101,7 +104,7 @@ def server(context, port):
     if port is None:
         port = int(environ.get("PORT", 3000))
     logging.info("Registering Salesforce metrics collector...")
-    REGISTRY.register(Collector())
+    REGISTRY.register(Collector())  # type: ignore[arg-type]
 
     # Wrap metrics endpoint with auth, leave health/home unprotected
     metrics_app = require_auth(make_wsgi_app())
