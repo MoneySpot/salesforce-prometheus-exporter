@@ -10,11 +10,11 @@ A Prometheus exporter for Salesforce org limits and metrics. Supports multiple t
 
 ## Features
 
-- 🔐 **OAuth 2.0 Client Credentials** - No username/password required
-- 🏢 **Multi-tenant** - Monitor multiple Salesforce orgs from a single instance
-- 🔑 **API Key Authentication** - Protect your metrics endpoint
-- 🐳 **Docker Ready** - Minimal Alpine-based image, runs as non-root
-- ☁️ **Fly.io Ready** - Deploy in minutes
+- **OAuth 2.0 Client Credentials** - No username/password required
+- **Multi-tenant** - Monitor multiple Salesforce orgs from a single instance
+- **API Key Authentication** - Protect your metrics endpoint
+- **Docker Ready** - Minimal Alpine-based image, runs as non-root
+- **Fly.io Ready** - Deploy in minutes
 
 ### Getting Started
 
