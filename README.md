@@ -236,6 +236,15 @@ sfdc_account_count{tenant="production"} 15234
 sfdc_account_count{tenant="sandbox"} 892
 ```
 
+#### Output with labels enabled
+
+```
+# HELP sfdc_opportunity_amount Total opportunity amount by stage
+# TYPE sfdc_opportunity_amount gauge
+sfdc_opportunity_amount{tenant="production",stage="Closed Won"} 1250000
+sfdc_opportunity_amount{tenant="production",stage="Negotiation"} 500000
+```
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
