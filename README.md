@@ -177,7 +177,8 @@ metrics:
 
 ### Security: Custom Labels
 
-⚠️ **Queries with custom labels are disabled by default** to prevent accidental data leakage.
+> [!WARNING]  
+> **Queries with custom labels are disabled by default** to prevent accidental data leakage.
 
 When you use `labels` and `label_fields`, the actual field values from Salesforce become Prometheus label values. This could expose sensitive data (e.g., customer names, email addresses) in your metrics.
 
