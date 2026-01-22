@@ -230,27 +230,42 @@ class Collector:
                     metrics=metrics,
                     parent=new_parent,
                 )
-            elif key == "Remaining":
-                metric_name = f"sfdc_remaining_{metric}"
+            elif key in ("Remaining", "Max"):
+                # Store raw metrics
+                if key == "Remaining":
+                    metric_name = f"sfdc_remaining_{metric}"
+                else:
+                    metric_name = f"sfdc_limit_{metric}"
+
                 if metric_name not in metrics:
                     metrics[metric_name] = {
                         "help": f"{parent or ''} {key}",
-                        "values": [],
+                        "values": {},
                     }
-                metrics[metric_name]["values"].append((tenant_name, value))
-            elif key == "Max":
-                metric_name = f"sfdc_limit_{metric}"
-                if metric_name not in metrics:
-                    metrics[metric_name] = {
-                        "help": f"{parent or ''} {key}",
-                        "values": [],
-                    }
-                metrics[metric_name]["values"].append((tenant_name, value))
+                metrics[metric_name]["values"][tenant_name] = value
+
+                # Calculate used metric when we have both limit and remaining
+                limit_name = f"sfdc_limit_{metric}"
+                remaining_name = f"sfdc_remaining_{metric}"
+                used_name = f"sfdc_used_{metric}"
+
+                if limit_name in metrics and remaining_name in metrics:
+                    limit_val = metrics[limit_name]["values"].get(tenant_name)
+                    remaining_val = metrics[remaining_name]["values"].get(tenant_name)
+                    if limit_val is not None and remaining_val is not None:
+                        if used_name not in metrics:
+                            metrics[used_name] = {
+                                "help": f"{parent or ''} Used",
+                                "values": {},
+                            }
+                        metrics[used_name]["values"][tenant_name] = (
+                            limit_val - remaining_val
+                        )
 
     def collect(self) -> Iterator[Metric]:
         """Collect metrics from all configured tenants."""
         # Collect all metrics from all tenants into a single dict
-        all_metrics = {}
+        all_metrics: Dict[str, Dict[str, Any]] = {}
         error_tenants = []
 
         for client in self.clients:
@@ -270,7 +285,7 @@ class Collector:
                 data["help"],
                 labels=["tenant"],
             )
-            for tenant_name, value in data["values"]:
+            for tenant_name, value in data["values"].items():
                 gauge.add_metric([tenant_name], value)
             yield gauge
 
