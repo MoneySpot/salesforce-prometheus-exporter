@@ -133,10 +133,16 @@ This project is a fork of [hippo-oss/salesforce-prometheus-exporter](https://git
 - Added Fly.io deployment configuration
 - Security hardening (request timeouts, constant-time auth comparison, non-root container)
 - Grouped Prometheus metrics output
+- Custom Queries
 
 ## Custom Queries
 
-You can define custom SOQL queries to expose as Prometheus metrics. Create a YAML config file:
+You can define custom SOQL queries to expose as Prometheus metrics. 
+
+> [!WARNING]  
+> This may dramatically increase the time it takes for metrics to be returned.
+
+Create a YAML config file:
 
 ```yaml
 # queries.yml
@@ -145,23 +151,13 @@ metrics:
   - name: sfdc_account_count
     description: Total number of accounts
     query: SELECT COUNT() FROM Account
-    value_field: expr0
-
-  # Aggregated query with labels
-  - name: sfdc_opportunity_amount
-    description: Total opportunity amount by stage
-    query: SELECT StageName, SUM(Amount) total FROM Opportunity GROUP BY StageName
-    value_field: total
-    labels:
-      - stage
-    label_fields:
-      - StageName
+    value_field: totalSize
 
   # Query restricted to specific tenants
   - name: sfdc_sandbox_leads
     description: Lead count (sandbox only)
     query: SELECT COUNT() FROM Lead
-    value_field: expr0
+    value_field: totalSize
     tenants:
       - sandbox
       - dev
@@ -179,6 +175,38 @@ metrics:
 | `label_fields` | No | SOQL fields to use as label values (must match `labels` order) |
 | `tenants` | No | List of tenant names to run this query on (omit for all tenants) |
 
+### Security: Custom Labels
+
+⚠️ **Queries with custom labels are disabled by default** to prevent accidental data leakage.
+
+When you use `labels` and `label_fields`, the actual field values from Salesforce become Prometheus label values. This could expose sensitive data (e.g., customer names, email addresses) in your metrics.
+
+To enable queries with custom labels, set the environment variable:
+
+```shell
+ALLOW_CUSTOM_LABELS=true
+```
+
+**Best practices:**
+- Only enable custom labels if you understand the security implications
+- Use aggregate queries (COUNT, SUM, AVG) instead of row-level data when possible
+- Always include `LIMIT` clauses in queries to prevent excessive data retrieval
+- Avoid using PII fields (Email, Phone, Name, etc.) as label fields
+
+**Example with labels (requires ALLOW_CUSTOM_LABELS=true):**
+
+```yaml
+metrics:
+  - name: sfdc_opportunity_amount_by_stage
+    description: Total opportunity amount by stage
+    query: SELECT StageName, SUM(Amount) total FROM Opportunity GROUP BY StageName LIMIT 50
+    value_field: total
+    labels:
+      - stage
+    label_fields:
+      - StageName
+```
+
 ### Usage
 
 Edit the `queries.yml` file in the repository root with your custom queries, then rebuild the Docker image:
@@ -190,6 +218,9 @@ docker build -t salesforce-prometheus-exporter .
 
 # Run as usual - queries.yml is baked into the image
 docker run -p 3000:3000 --env-file /tmp/env.list salesforce-prometheus-exporter:latest
+
+# To enable custom labels (if needed)
+docker run -p 3000:3000 -e ALLOW_CUSTOM_LABELS=true --env-file /tmp/env.list salesforce-prometheus-exporter:latest
 ```
 
 The `queries.yml` file is automatically copied into the container at `/config/queries.yml` during the build.
@@ -203,11 +234,6 @@ To disable custom queries, leave all metrics commented out in `queries.yml`.
 # TYPE sfdc_account_count gauge
 sfdc_account_count{tenant="production"} 15234
 sfdc_account_count{tenant="sandbox"} 892
-
-# HELP sfdc_opportunity_amount Total opportunity amount by stage
-# TYPE sfdc_opportunity_amount gauge
-sfdc_opportunity_amount{tenant="production",stage="Closed Won"} 1250000
-sfdc_opportunity_amount{tenant="production",stage="Negotiation"} 500000
 ```
 
 ## License
