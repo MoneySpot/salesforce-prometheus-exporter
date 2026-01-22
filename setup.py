@@ -10,6 +10,7 @@ install_requires = [
     "requests>=2.28.0",
     "Flask>=3.0.0",
     "Werkzeug>=3.0.0",
+    "PyYAML>=6.0",
 ]
 
 setup(

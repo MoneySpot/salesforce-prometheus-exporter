@@ -1,4 +1,4 @@
-FROM python:3.12 as builder
+FROM python:3.12 AS builder
 COPY . .
 RUN pip install --upgrade build
 RUN python -m build
@@ -12,6 +12,9 @@ RUN addgroup -g 1000 exporter && \
 COPY --from=builder /dist/* dist/
 RUN pip install dist/*-py2.py3-none-any.whl && \
     rm -rf dist/
+
+# Copy queries config
+COPY --from=builder queries.yml /config/queries.yml
 
 # Switch to non-root user
 USER exporter
