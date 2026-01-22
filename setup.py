@@ -14,7 +14,7 @@ install_requires = [
 
 setup(
     name="salesforce-prometheus-exporter",
-    version="1.0.1",
+    version="1.1.0",
     author="Hector Droguett-Alfaro",
     author_email="hector@moneyspot.com.au",
     description="Prometheus exporter for Salesforce org limits and metrics using OAuth 2.0 Client Credentials flow.",
