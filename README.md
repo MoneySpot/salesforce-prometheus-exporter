@@ -46,17 +46,17 @@ TENANTS=production,sandbox,dev
 
 # Configuration for each tenant (prefix: TENANT_<NAME>_)
 TENANT_PRODUCTION_URL=https://mycompany.my.salesforce.com
-TENANT_PRODUCTION_VERSION=57.0
+TENANT_PRODUCTION_VERSION=64.0
 TENANT_PRODUCTION_CONSUMER_ID=<consumer id>
 TENANT_PRODUCTION_CONSUMER_SECRET=<consumer secret>
 
 TENANT_SANDBOX_URL=https://mycompany--sandbox.sandbox.my.salesforce.com
-TENANT_SANDBOX_VERSION=57.0
+TENANT_SANDBOX_VERSION=64.0
 TENANT_SANDBOX_CONSUMER_ID=<consumer id>
 TENANT_SANDBOX_CONSUMER_SECRET=<consumer secret>
 
 TENANT_DEV_URL=https://mycompany--dev.sandbox.my.salesforce.com
-TENANT_DEV_VERSION=57.0
+TENANT_DEV_VERSION=64.0
 TENANT_DEV_CONSUMER_ID=<consumer id>
 TENANT_DEV_CONSUMER_SECRET=<consumer secret>
 
@@ -266,7 +266,7 @@ fly launch --no-deploy
 # Set your secrets (single tenant)
 fly secrets set \
   SF_URL=https://yourcompany.my.salesforce.com \
-  SF_VERSION=57.0 \
+  SF_VERSION=64.0 \
   CONSUMER_ID=your_consumer_id \
   CONSUMER_SECRET=your_consumer_secret \
   ENVIRONMENT=production \
@@ -276,11 +276,11 @@ fly secrets set \
 fly secrets set \
   TENANTS=prod,sandbox \
   TENANT_PROD_URL=https://yourcompany.my.salesforce.com \
-  TENANT_PROD_VERSION=57.0 \
+  TENANT_PROD_VERSION=64.0 \
   TENANT_PROD_CONSUMER_ID=your_consumer_id \
   TENANT_PROD_CONSUMER_SECRET=your_consumer_secret \
   TENANT_SANDBOX_URL=https://yourcompany--sandbox.sandbox.my.salesforce.com \
-  TENANT_SANDBOX_VERSION=57.0 \
+  TENANT_SANDBOX_VERSION=64.0 \
   TENANT_SANDBOX_CONSUMER_ID=your_consumer_id \
   TENANT_SANDBOX_CONSUMER_SECRET=your_consumer_secret \
   API_KEY=your_secret_api_key
