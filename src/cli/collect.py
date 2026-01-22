@@ -1,9 +1,9 @@
 import logging
 from os import environ
-from typing import Optional
+from typing import Any, Dict, Iterator, Optional
 
 import requests
-from prometheus_client.core import GaugeMetricFamily
+from prometheus_client.core import GaugeMetricFamily, Metric
 
 # Default timeout for all HTTP requests (seconds)
 REQUEST_TIMEOUT = 30
@@ -135,12 +135,19 @@ def load_tenants_from_env() -> list[TenantConfig]:
 
             prefix = f"TENANT_{name}_"
 
-            url = environ.get(f"{prefix}URL")
-            version = environ.get(f"{prefix}VERSION")
-            client_id = environ.get(f"{prefix}CONSUMER_ID")
-            client_secret = environ.get(f"{prefix}CONSUMER_SECRET")
+            tenant_url: Optional[str] = environ.get(f"{prefix}URL")
+            tenant_version: Optional[str] = environ.get(f"{prefix}VERSION")
+            tenant_client_id: Optional[str] = environ.get(f"{prefix}CONSUMER_ID")
+            tenant_client_secret: Optional[str] = environ.get(
+                f"{prefix}CONSUMER_SECRET"
+            )
 
-            if not all([url, version, client_id, client_secret]):
+            if (
+                tenant_url is None
+                or tenant_version is None
+                or tenant_client_id is None
+                or tenant_client_secret is None
+            ):
                 logging.warning(
                     f"Skipping tenant '{name}': missing required configuration. "
                     f"Need {prefix}URL, {prefix}VERSION, {prefix}CONSUMER_ID, {prefix}CONSUMER_SECRET"
@@ -150,33 +157,38 @@ def load_tenants_from_env() -> list[TenantConfig]:
             tenants.append(
                 TenantConfig(
                     name=name.lower(),
-                    login_url=url,
-                    version=version,
-                    client_id=client_id,
-                    client_secret=client_secret,
+                    login_url=tenant_url,
+                    version=tenant_version,
+                    client_id=tenant_client_id,
+                    client_secret=tenant_client_secret,
                 )
             )
             logging.info(f"Loaded tenant configuration: {name.lower()}")
 
     else:
         # Single tenant mode (legacy/fallback)
-        url = environ.get("SF_URL")
-        version = environ.get("SF_VERSION")
-        client_id = environ.get("CONSUMER_ID")
-        client_secret = environ.get("CONSUMER_SECRET")
-        name = environ.get("ENVIRONMENT", "default")
+        single_url: Optional[str] = environ.get("SF_URL")
+        single_version: Optional[str] = environ.get("SF_VERSION")
+        single_client_id: Optional[str] = environ.get("CONSUMER_ID")
+        single_client_secret: Optional[str] = environ.get("CONSUMER_SECRET")
+        single_name: str = environ.get("ENVIRONMENT", "default")
 
-        if all([url, version, client_id, client_secret]):
+        if (
+            single_url is not None
+            and single_version is not None
+            and single_client_id is not None
+            and single_client_secret is not None
+        ):
             tenants.append(
                 TenantConfig(
-                    name=name,
-                    login_url=url,
-                    version=version,
-                    client_id=client_id,
-                    client_secret=client_secret,
+                    name=single_name,
+                    login_url=single_url,
+                    version=single_version,
+                    client_id=single_client_id,
+                    client_secret=single_client_secret,
                 )
             )
-            logging.info(f"Loaded single tenant configuration: {name}")
+            logging.info(f"Loaded single tenant configuration: {single_name}")
         else:
             logging.error(
                 "No tenant configuration found. Set either TENANTS env var for multi-tenant, "
@@ -186,23 +198,28 @@ def load_tenants_from_env() -> list[TenantConfig]:
     return tenants
 
 
-class Collector(object):
+class Collector:
     """Prometheus collector that fetches metrics from multiple Salesforce orgs."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.tenants = load_tenants_from_env()
         self.clients = [TenantClient(config) for config in self.tenants]
         logging.info(f"Initialized collector with {len(self.clients)} tenant(s)")
 
     def _extract_metrics(
-        self, logs: dict, tenant_name: str, metrics: dict, parent: Optional[str] = None
-    ):
+        self,
+        logs: Dict[str, Any],
+        tenant_name: str,
+        metrics: Dict[str, Dict[str, Any]],
+        parent: Optional[str] = None,
+    ) -> None:
         """Extract metrics from logs into a dictionary keyed by metric name."""
         for key, value in logs.items():
+            metric: str = ""
             if parent:
                 metric = f"{parent}".replace(" ", "_").replace(".", "_")
 
-            if type(value) == dict:
+            if isinstance(value, dict):
                 if parent:
                     new_parent = f"{parent}_{key}"
                 else:
@@ -230,7 +247,7 @@ class Collector(object):
                     }
                 metrics[metric_name]["values"].append((tenant_name, value))
 
-    def collect(self):
+    def collect(self) -> Iterator[Metric]:
         """Collect metrics from all configured tenants."""
         # Collect all metrics from all tenants into a single dict
         all_metrics = {}
