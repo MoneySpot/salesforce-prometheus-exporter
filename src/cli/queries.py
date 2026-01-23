@@ -2,6 +2,7 @@
 
 import logging
 import os
+import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional
@@ -121,8 +122,6 @@ class QueryClient:
         }
 
         # URL-encode the query
-        import urllib.parse
-
         encoded_query = urllib.parse.quote(query)
 
         url = (
