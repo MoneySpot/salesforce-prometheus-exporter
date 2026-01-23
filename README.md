@@ -133,7 +133,7 @@ This project is a fork of [hippo-oss/salesforce-prometheus-exporter](https://git
 - Added Fly.io deployment configuration
 - Security hardening (request timeouts, constant-time auth comparison, non-root container)
 - Grouped Prometheus metrics output
-- Custom Queries
+- Custom queries
 
 ## Custom Queries
 
