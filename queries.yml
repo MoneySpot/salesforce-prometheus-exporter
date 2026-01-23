@@ -1,0 +1,27 @@
+metrics:
+  # Simple count query - runs on all tenants
+  - name: sfdc_user_count
+    description: Total number of users
+    query: SELECT COUNT() FROM User
+    value_field: totalSize
+    tenants:
+      - prawn
+
+  # # Aggregated query with labels
+  - name: sfdc_opportunity_amount
+    description: Total opportunity amount by stage
+    query: SELECT StageName, SUM(Amount) total FROM Opportunity GROUP BY StageName
+    value_field: total
+    labels:
+      - stage
+    label_fields:
+      - StageName
+
+  # Example: Query restricted to specific tenants
+  # - name: sfdc_lead_count
+  #   description: Lead count (sandbox only)
+  #   query: SELECT COUNT() FROM Lead
+  #   value_field: totalSize
+  #   tenants:
+  #     - sandbox
+  #     - dev

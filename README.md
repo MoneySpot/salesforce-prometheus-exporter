@@ -46,17 +46,17 @@ TENANTS=production,sandbox,dev
 
 # Configuration for each tenant (prefix: TENANT_<NAME>_)
 TENANT_PRODUCTION_URL=https://mycompany.my.salesforce.com
-TENANT_PRODUCTION_VERSION=57.0
+TENANT_PRODUCTION_VERSION=64.0
 TENANT_PRODUCTION_CONSUMER_ID=<consumer id>
 TENANT_PRODUCTION_CONSUMER_SECRET=<consumer secret>
 
 TENANT_SANDBOX_URL=https://mycompany--sandbox.sandbox.my.salesforce.com
-TENANT_SANDBOX_VERSION=57.0
+TENANT_SANDBOX_VERSION=64.0
 TENANT_SANDBOX_CONSUMER_ID=<consumer id>
 TENANT_SANDBOX_CONSUMER_SECRET=<consumer secret>
 
 TENANT_DEV_URL=https://mycompany--dev.sandbox.my.salesforce.com
-TENANT_DEV_VERSION=57.0
+TENANT_DEV_VERSION=64.0
 TENANT_DEV_CONSUMER_ID=<consumer id>
 TENANT_DEV_CONSUMER_SECRET=<consumer secret>
 
@@ -133,6 +133,118 @@ This project is a fork of [hippo-oss/salesforce-prometheus-exporter](https://git
 - Added Fly.io deployment configuration
 - Security hardening (request timeouts, constant-time auth comparison, non-root container)
 - Grouped Prometheus metrics output
+- Custom Queries
+
+## Custom Queries
+
+You can define custom SOQL queries to expose as Prometheus metrics. 
+
+> [!WARNING]  
+> This may dramatically increase the time it takes for metrics to be returned.
+
+Create a YAML config file:
+
+```yaml
+# queries.yml
+metrics:
+  # Simple count query - runs on all tenants
+  - name: sfdc_account_count
+    description: Total number of accounts
+    query: SELECT COUNT() FROM Account
+    value_field: totalSize
+
+  # Query restricted to specific tenants
+  - name: sfdc_sandbox_leads
+    description: Lead count (sandbox only)
+    query: SELECT COUNT() FROM Lead
+    value_field: totalSize
+    tenants:
+      - sandbox
+      - dev
+```
+
+### Configuration Options
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `name` | Yes | Prometheus metric name |
+| `description` | Yes | Metric help text |
+| `query` | Yes | SOQL query to execute |
+| `value_field` | Yes | Field name containing the numeric value |
+| `labels` | No | Additional label names for the metric |
+| `label_fields` | No | SOQL fields to use as label values (must match `labels` order) |
+| `tenants` | No | List of tenant names to run this query on (omit for all tenants) |
+
+### Security: Custom Labels
+
+> [!WARNING]  
+> **Queries with custom labels are disabled by default** to prevent accidental data leakage.
+
+When you use `labels` and `label_fields`, the actual field values from Salesforce become Prometheus label values. This could expose sensitive data (e.g., customer names, email addresses) in your metrics.
+
+To enable queries with custom labels, set the environment variable:
+
+```shell
+ALLOW_CUSTOM_LABELS=true
+```
+
+**Best practices:**
+- Only enable custom labels if you understand the security implications
+- Use aggregate queries (COUNT, SUM, AVG) instead of row-level data when possible
+- Always include `LIMIT` clauses in queries to prevent excessive data retrieval
+- Avoid using PII fields (Email, Phone, Name, etc.) as label fields
+
+**Example with labels (requires ALLOW_CUSTOM_LABELS=true):**
+
+```yaml
+metrics:
+  - name: sfdc_opportunity_amount_by_stage
+    description: Total opportunity amount by stage
+    query: SELECT StageName, SUM(Amount) total FROM Opportunity GROUP BY StageName LIMIT 50
+    value_field: total
+    labels:
+      - stage
+    label_fields:
+      - StageName
+```
+
+### Usage
+
+Edit the `queries.yml` file in the repository root with your custom queries, then rebuild the Docker image:
+
+```shell
+# Edit queries.yml with your custom queries
+# Then rebuild the image
+docker build -t salesforce-prometheus-exporter .
+
+# Run as usual - queries.yml is baked into the image
+docker run -p 3000:3000 --env-file /tmp/env.list salesforce-prometheus-exporter:latest
+
+# To enable custom labels (if needed)
+docker run -p 3000:3000 -e ALLOW_CUSTOM_LABELS=true --env-file /tmp/env.list salesforce-prometheus-exporter:latest
+```
+
+The `queries.yml` file is automatically copied into the container at `/config/queries.yml` during the build.
+
+To disable custom queries, leave all metrics commented out in `queries.yml`.
+
+### Example Output
+
+```
+# HELP sfdc_account_count Total number of accounts
+# TYPE sfdc_account_count gauge
+sfdc_account_count{tenant="production"} 15234
+sfdc_account_count{tenant="sandbox"} 892
+```
+
+#### Output with labels enabled
+
+```
+# HELP sfdc_opportunity_amount_by_stage Total opportunity amount by stage
+# TYPE sfdc_opportunity_amount_by_stage gauge
+sfdc_opportunity_amount_by_stage{tenant="production",stage="Closed Won"} 1250000
+sfdc_opportunity_amount_by_stage{tenant="production",stage="Negotiation"} 500000
+```
 
 ## License
 
@@ -154,7 +266,7 @@ fly launch --no-deploy
 # Set your secrets (single tenant)
 fly secrets set \
   SF_URL=https://yourcompany.my.salesforce.com \
-  SF_VERSION=57.0 \
+  SF_VERSION=64.0 \
   CONSUMER_ID=your_consumer_id \
   CONSUMER_SECRET=your_consumer_secret \
   ENVIRONMENT=production \
@@ -164,11 +276,11 @@ fly secrets set \
 fly secrets set \
   TENANTS=prod,sandbox \
   TENANT_PROD_URL=https://yourcompany.my.salesforce.com \
-  TENANT_PROD_VERSION=57.0 \
+  TENANT_PROD_VERSION=64.0 \
   TENANT_PROD_CONSUMER_ID=your_consumer_id \
   TENANT_PROD_CONSUMER_SECRET=your_consumer_secret \
   TENANT_SANDBOX_URL=https://yourcompany--sandbox.sandbox.my.salesforce.com \
-  TENANT_SANDBOX_VERSION=57.0 \
+  TENANT_SANDBOX_VERSION=64.0 \
   TENANT_SANDBOX_CONSUMER_ID=your_consumer_id \
   TENANT_SANDBOX_CONSUMER_SECRET=your_consumer_secret \
   API_KEY=your_secret_api_key

@@ -10,11 +10,12 @@ install_requires = [
     "requests>=2.28.0",
     "Flask>=3.0.0",
     "Werkzeug>=3.0.0",
+    "PyYAML>=6.0",
 ]
 
 setup(
     name="salesforce-prometheus-exporter",
-    version="2.0.0",
+    version="2.1.0",
     author="MoneySpot",
     author_email="opensource@moneyspot.com.au",
     description="Prometheus exporter for Salesforce org limits and metrics using OAuth 2.0 Client Credentials flow.",

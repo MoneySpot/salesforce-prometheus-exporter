@@ -1,0 +1,69 @@
+# Custom SOQL Queries for Prometheus Metrics
+#
+# SECURITY NOTE:
+# - Queries with labels/label_fields are disabled by default
+# - Set ALLOW_CUSTOM_LABELS=true to enable (may expose sensitive data)
+# - Always use LIMIT clauses to prevent excessive data retrieval
+# - Prefer aggregate queries (COUNT, SUM, AVG) over row-level data
+
+metrics:
+  # Simple count query - safe, no labels
+  - name: sfdc_user_count
+    description: Total number of active users
+    query: SELECT COUNT() FROM User WHERE IsActive = true
+    value_field: totalSize
+
+  # Account count - safe, no labels
+  - name: sfdc_account_count
+    description: Total number of accounts
+    query: SELECT COUNT() FROM Account
+    value_field: totalSize
+
+  # Opportunity count - safe, no labels
+  - name: sfdc_opportunity_count
+    description: Total number of open opportunities
+    query: SELECT COUNT() FROM Opportunity WHERE IsClosed = false
+    value_field: totalSize
+
+  # Case count - safe, no labels
+  - name: sfdc_case_count
+    description: Total number of open cases
+    query: SELECT COUNT() FROM Case WHERE IsClosed = false
+    value_field: totalSize
+
+  # -----------------------------------------------------------
+  # QUERIES WITH LABELS (require ALLOW_CUSTOM_LABELS=true)
+  # -----------------------------------------------------------
+
+  # Opportunity amount by stage - uses labels
+  # - name: sfdc_opportunity_amount_by_stage
+  #   description: Total opportunity amount by stage
+  #   query: SELECT StageName, SUM(Amount) total FROM Opportunity WHERE IsClosed = false GROUP BY StageName LIMIT 50
+  #   value_field: total
+  #   labels:
+  #     - stage
+  #   label_fields:
+  #     - StageName
+
+  # Case count by status - uses labels
+  # - name: sfdc_case_count_by_status
+  #   description: Case count by status
+  #   query: SELECT Status, COUNT(Id) total FROM Case GROUP BY Status LIMIT 20
+  #   value_field: total
+  #   labels:
+  #     - status
+  #   label_fields:
+  #     - Status
+
+  # -----------------------------------------------------------
+  # TENANT-SPECIFIC QUERIES
+  # -----------------------------------------------------------
+
+  # Example: Query only runs on specific tenants
+  # - name: sfdc_sandbox_lead_count
+  #   description: Lead count (sandbox only)
+  #   query: SELECT COUNT() FROM Lead
+  #   value_field: totalSize
+  #   tenants:
+  #     - sandbox
+  #     - dev

@@ -16,6 +16,7 @@ from werkzeug.middleware.dispatcher import (  # type: ignore[import-untyped]
 )
 
 from cli.collect import Collector
+from cli.queries import CustomQueryCollector
 
 logging.basicConfig(level=logging.INFO)
 
@@ -105,6 +106,10 @@ def server(context: Any, port: int | None) -> None:
         port = int(environ.get("PORT", 3000))
     logging.info("Registering Salesforce metrics collector...")
     REGISTRY.register(Collector())  # type: ignore[arg-type]
+
+    # Register custom queries collector
+    logging.info("Registering custom queries collector...")
+    REGISTRY.register(CustomQueryCollector())  # type: ignore[arg-type]
 
     # Wrap metrics endpoint with auth, leave health/home unprotected
     metrics_app = require_auth(make_wsgi_app())
