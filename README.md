@@ -240,10 +240,10 @@ sfdc_account_count{tenant="sandbox"} 892
 #### Output with labels enabled
 
 ```
-# HELP sfdc_opportunity_amount Total opportunity amount by stage
-# TYPE sfdc_opportunity_amount gauge
-sfdc_opportunity_amount{tenant="production",stage="Closed Won"} 1250000
-sfdc_opportunity_amount{tenant="production",stage="Negotiation"} 500000
+# HELP sfdc_opportunity_amount_by_stage Total opportunity amount by stage
+# TYPE sfdc_opportunity_amount_by_stage gauge
+sfdc_opportunity_amount_by_stage{tenant="production",stage="Closed Won"} 1250000
+sfdc_opportunity_amount_by_stage{tenant="production",stage="Negotiation"} 500000
 ```
 
 ## License
